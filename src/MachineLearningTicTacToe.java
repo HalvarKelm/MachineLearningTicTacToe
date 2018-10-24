@@ -11,10 +11,11 @@ public class MachineLearningTicTacToe {
 	private static final int SIZE = 3;
 
 	// saves the corresponding action
-	int[] round = null;
+	int[] round = new int[19683];
 	int position = 0;
 	int[] history = null;
-	public static ArrayList<int[]> knownFields;
+
+	// public static ArrayList<int[]> knownFields;
 
 	public static void main(String[] args) {
 		/*
@@ -23,23 +24,52 @@ public class MachineLearningTicTacToe {
 		 * possibility a field to chose 4. change the field to chose till the
 		 * win/draw possibility is 100%
 		 */
-		knownFields = new ArrayList<int[]>();
+		// knownFields = new ArrayList<int[]>();
+		int[] field = new int[SIZE * SIZE];
+		for (int i = 0; i < SIZE * SIZE; i++)
+			field[i] = 0;
+		printScreen(field);
+		System.out.println("is "+calcField(field));
+		field[0] = 1;
+		printScreen(field);
+		System.out.println("is "+calcField(field));
+		for (int i = 0; i < SIZE * SIZE; i++)
+			field[i] = 2;
+		printScreen(field);
+		System.out.println("is "+calcField(field));
+		/*arg0
 		double winPercentage = 0.0;
 		double wongames = 0.0;
 		double games = 0.0;
-		for (int i = 0; i < 100000; i++) {
+		for (int i = 0; i < 150000; i++) {
 			games++;
 			boolean won = play();
 			if (won) {
 				wongames++;
 			}
 		}
+		
 		System.out.println("Played games: " + games);
 		winPercentage = (wongames / games) * 100;
 		System.out.println("You won " + winPercentage + "%.");
-		System.out.println("I found " + knownFields.size() + " fields.");
+		// System.out.println("I found " + knownFields.size() + " fields.");
+		// BEST: 380318 bei 100000
+		// 570672 bei 150000
+		// 570419 bei 150000
+		// 570442
+		// 571000
+		  */
 	}
-
+	
+	private static int calcField(int[] field){
+		int finalInt = 0;
+		int[] threes = {1,3,9,27,81,243,729,2187,6561};
+		for(int i = 0; i < SIZE * SIZE; i++){
+			finalInt += field[i]*threes[i];
+		}
+		return finalInt;
+	}
+	
 	private static boolean play() {
 		int[] field = new int[SIZE * SIZE];
 		for (int i = 0; i < SIZE * SIZE; i++)
@@ -58,16 +88,13 @@ public class MachineLearningTicTacToe {
 		while (win == 0 && draw == false) {
 			if (play == true) {
 				checkRandomField(field, true);
-				boolean isInKnown = false;
-				for (int i = 0; i < knownFields.size(); i++) {
-					if (!isDifferent(knownFields.get(i), field)) {
-						isInKnown = true;
-					}
-				}
-				if (isInKnown == false) {
-					knownFields.add(field);
-				}
-				isInKnown = false;
+				/*
+				 * boolean isInKnown = false; for (int i = 0; i <
+				 * knownFields.size(); i++) { if
+				 * (!isDifferent(knownFields.get(i), field)) { isInKnown = true;
+				 * } } if (isInKnown == false) { knownFields.add(field); }
+				 * isInKnown = false;
+				 */
 				play = !play;
 			} else {
 				checkRandomField(field, false);
