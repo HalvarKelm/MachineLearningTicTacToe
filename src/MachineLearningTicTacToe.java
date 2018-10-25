@@ -9,11 +9,12 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class MachineLearningTicTacToe {
 	private static final int SIZE = 3;
-
+	private static final int POSSIBILITIES = 19863;
+	
 	// saves the corresponding action
-	int[] round = new int[19683];
+	static int[] round = new int[POSSIBILITIES];
 	int position = 0;
-	int[] history = null;
+	static ArrayList<int[]> history = null;
 
 	// public static ArrayList<int[]> knownFields;
 
@@ -25,7 +26,7 @@ public class MachineLearningTicTacToe {
 		 * win/draw possibility is 100%
 		 */
 		// knownFields = new ArrayList<int[]>();
-		int[] field = new int[SIZE * SIZE];
+		/*int[] field = new int[SIZE * SIZE];
 		for (int i = 0; i < SIZE * SIZE; i++)
 			field[i] = 0;
 		printScreen(field);
@@ -36,12 +37,25 @@ public class MachineLearningTicTacToe {
 		for (int i = 0; i < SIZE * SIZE; i++)
 			field[i] = 2;
 		printScreen(field);
-		System.out.println("is "+calcField(field));
-		/*arg0
+		System.out.println("is "+calcField(field));*/
+		init();
+		play();
+		//train();
+		
+		// System.out.println("I found " + knownFields.size() + " fields.");
+		// BEST: 380318 bei 100000
+		// 570672 bei 150000
+		// 570419 bei 150000
+		// 570442
+		// 571000
+		  
+	}
+	
+	private static void train(){
 		double winPercentage = 0.0;
 		double wongames = 0.0;
 		double games = 0.0;
-		for (int i = 0; i < 150000; i++) {
+		for (int i = 0; i < 1000000; i++) {
 			games++;
 			boolean won = play();
 			if (won) {
@@ -52,13 +66,12 @@ public class MachineLearningTicTacToe {
 		System.out.println("Played games: " + games);
 		winPercentage = (wongames / games) * 100;
 		System.out.println("You won " + winPercentage + "%.");
-		// System.out.println("I found " + knownFields.size() + " fields.");
-		// BEST: 380318 bei 100000
-		// 570672 bei 150000
-		// 570419 bei 150000
-		// 570442
-		// 571000
-		  */
+	}
+	
+	private static void init(){
+		for(int i = 0; i < POSSIBILITIES; i++){
+			round[i] = ThreadLocalRandom.current().nextInt(0, 8 + 1);;
+		}
 	}
 	
 	private static int calcField(int[] field){
@@ -71,6 +84,7 @@ public class MachineLearningTicTacToe {
 	}
 	
 	private static boolean play() {
+		history = new ArrayList<int[]>();
 		int[] field = new int[SIZE * SIZE];
 		for (int i = 0; i < SIZE * SIZE; i++)
 			field[i] = 0;
@@ -87,7 +101,10 @@ public class MachineLearningTicTacToe {
 
 		while (win == 0 && draw == false) {
 			if (play == true) {
-				checkRandomField(field, true);
+				//save field in history
+				history.add(field);
+				//checkRandomField(field, true);
+				field[getRightField(field)] = 1;
 				/*
 				 * boolean isInKnown = false; for (int i = 0; i <
 				 * knownFields.size(); i++) { if
@@ -100,7 +117,7 @@ public class MachineLearningTicTacToe {
 				checkRandomField(field, false);
 				play = !play;
 			}
-			// printScreen(field);
+			 printScreen(field);
 			win = checkForWin(field);
 			if (win == 0) {
 				draw = checkForDraw(field);
@@ -111,6 +128,11 @@ public class MachineLearningTicTacToe {
 			endwin = true;
 		}
 		return endwin;
+	}
+	
+	private static int getRightField(int[] field){
+		int fieldNr = calcField(field);
+		return round[fieldNr];
 	}
 
 	private static boolean isDifferent(int field1[], int field2[]) {
