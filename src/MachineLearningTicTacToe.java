@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
 /*
@@ -7,131 +8,578 @@ import java.util.concurrent.ThreadLocalRandom;
  * 
  * 	This program is using machine learning to get the best field for any TicTacToe possibility
  */
+
 public class MachineLearningTicTacToe {
+
+	// TicTacToe size
 	private static final int SIZE = 3;
-	private static final int POSSIBILITIES = 19863;
-	
+
+	// amount of possible situations
+	private static final int POSSIBILITIES = 19682;
+
 	// saves the corresponding action
 	static int[] round = new int[POSSIBILITIES];
-	int position = 0;
-	static ArrayList<int[]> history = null;
 
-	// public static ArrayList<int[]> knownFields;
+	// how often the ML alg should play against a random player
+	static int trainAmount = 10000;
+	static int possibilityCheck = 1000;
+
+	// track the number of trys each games
+	static int trys = 0;
+
+	static int trainingRounds = 0;
+	static int lost = 0;
+	static int changes = 0;
+	static double bestWinRate = 0.0;
 
 	public static void main(String[] args) {
 		/*
-		 * TODO: 1. Let the machine learning alg play against the random
-		 * computer 2. Save a number for any possiblity 3. Save for every
-		 * possibility a field to chose 4. change the field to chose till the
-		 * win/draw possibility is 100%
+		 * ArrayList<int[]> c = new ArrayList<int[]>(); int[] ca= {1,2,3,4,5,6,7,8,9};
+		 * int[] cb= {11,12,13,14,15,16,17,18,19}; c.add(ca); c.add(cb); for(int i = 0;
+		 * i < c.size(); i++) { printScreen(c.get(i)); }
 		 */
-		// knownFields = new ArrayList<int[]>();
-		/*int[] field = new int[SIZE * SIZE];
-		for (int i = 0; i < SIZE * SIZE; i++)
-			field[i] = 0;
-		printScreen(field);
-		System.out.println("is "+calcField(field));
-		field[0] = 1;
-		printScreen(field);
-		System.out.println("is "+calcField(field));
-		for (int i = 0; i < SIZE * SIZE; i++)
-			field[i] = 2;
-		printScreen(field);
-		System.out.println("is "+calcField(field));*/
+
+		// chose between training mode and 1 game only mode
+		int train = 2;
+
+		// setup the choises to pick random
 		init();
-		play();
-		//train();
-		
-		// System.out.println("I found " + knownFields.size() + " fields.");
-		// BEST: 380318 bei 100000
-		// 570672 bei 150000
-		// 570419 bei 150000
-		// 570442
-		// 571000
-		  
-	}
-	
-	private static void train(){
-		double winPercentage = 0.0;
-		double wongames = 0.0;
-		double games = 0.0;
-		for (int i = 0; i < 1000000; i++) {
-			games++;
-			boolean won = play();
-			if (won) {
-				wongames++;
+		int[] testField = new int[SIZE * SIZE];
+		testField[0] = 1;
+		testField[1] = 0;
+		testField[2] = 0;
+		testField[3] = 0;
+		testField[4] = 0;
+		testField[5] = 0;
+		testField[6] = 2;
+		testField[7] = 0;
+		testField[8] = 0;
+		printScreen(calcField(calcNumber(testField)));
+		System.out.println("Best choice is " + getBestPossibility(testField, true));
+		int c = (getBestPossibility(testField, false));
+		for (int i = 0; i < 100; i++) {
+
+			testField = new int[SIZE * SIZE];
+			testField[0] = 1;
+			testField[1] = 0;
+			testField[2] = 0;
+			testField[3] = 0;
+			testField[4] = 0;
+			testField[5] = 0;
+			testField[6] = 2;
+			testField[7] = 0;
+			testField[8] = 0;
+			if (getBestPossibility(testField, false) != c)
+				System.out.println("Best choice is " + getBestPossibility(testField, false));
+		}
+		System.out.println("Best choice is " + getBestPossibility(testField, true));
+		if (train == 1) {
+			System.out.println("Training machine learning algorithm...");
+			double WinRate = 0;
+			for (int i = 0; i < 100; i++) {
+				System.out.println("Training once more...");
+				WinRate = train();
+				if (WinRate > bestWinRate) {
+					bestWinRate = WinRate;
+				}
+				test(true);
+				lost = 0;
 			}
-		}
-		
-		System.out.println("Played games: " + games);
-		winPercentage = (wongames / games) * 100;
-		System.out.println("You won " + winPercentage + "%.");
+		} else if (train == 2) {
+			for (int i = 0; i < round.length; i++) {
+				if (i% 200 == 0)
+					System.out.println("Training... " + (int)((i/(double)(round.length))*100) + "%");
+				round[i] = getBestPossibility(calcField(i), false);
+			}
+			
+			//TODO: This machine learning algorithm does not choose the best solution at the following fields
+			/*
+			 * 
+			 * The best way to start is in a corner (this algorithms solution: center)
+			 * [0][0][0]
+			 * [0][0][0]
+			 * [0][0][0]
+			 * 
+			 * The best place to choose is in at 8 (this algorithms solution: 6)
+			 * [1][0][2]
+			 * [0][0][0]
+			 * [0][0][0]
+			 * 
+			 * The best place to choose is in at 2 (this algorithms solution: 8)
+			 * [1][0][0]
+			 * [0][0][0]
+			 * [2][0][0]
+			 * 
+			 * The best place to choose is in at 1
+			 * [2][0][0]
+			 * [0][1][0]
+			 * [0][0][0]
+			 * 
+			 * The best place to choose is in at 1
+			 * [0][0][2]
+			 * [0][1][0]
+			 * [0][0][0]
+			 */
+			round[0] = 0;
+			testField = new int[SIZE * SIZE];
+			testField[0] = 1;
+			testField[1] = 0;
+			testField[2] = 0;
+			testField[3] = 0;
+			testField[4] = 0;
+			testField[5] = 0;
+			testField[6] = 2;
+			testField[7] = 0;
+			testField[8] = 0;
+			round[calcNumber(testField)] = 8;
+			testField = new int[SIZE * SIZE];
+			testField[0] = 1;
+			testField[1] = 0;
+			testField[2] = 2;
+			testField[3] = 0;
+			testField[4] = 0;
+			testField[5] = 0;
+			testField[6] = 0;
+			testField[7] = 0;
+			testField[8] = 0;
+			round[calcNumber(testField)] = 8;
+			test(false);
+			test(true);
+		} /*
+			 * else if (train == 0) { int[] field = new int[SIZE * SIZE]; for (int i = 0; i
+			 * < SIZE * SIZE; i++) { field[i] = 0; } int won = 0; while (won != 2) { won =
+			 * testGame(field, true); if (won != 2) { System.out.println("WON!"); } } }
+			 */
 	}
-	
-	private static void init(){
-		for(int i = 0; i < POSSIBILITIES; i++){
-			round[i] = ThreadLocalRandom.current().nextInt(0, 8 + 1);;
-		}
-	}
-	
-	private static int calcField(int[] field){
-		int finalInt = 0;
-		int[] threes = {1,3,9,27,81,243,729,2187,6561};
-		for(int i = 0; i < SIZE * SIZE; i++){
-			finalInt += field[i]*threes[i];
-		}
-		return finalInt;
-	}
-	
-	private static boolean play() {
-		history = new ArrayList<int[]>();
+
+	private static int playGame(boolean output) {
+
 		int[] field = new int[SIZE * SIZE];
-		for (int i = 0; i < SIZE * SIZE; i++)
+		for (int i = 0; i < SIZE * SIZE; i++) {
 			field[i] = 0;
+		}
 
+		// a list to store the fields of a match
+		ArrayList<int[]> history = new ArrayList<int[]>();
+
+		int rounds = 0;
 		boolean play = false;
-		int randomNum = ThreadLocalRandom.current().nextInt(1, 2 + 1);
+		int randomNum = (int) (Math.random() * 2) + 1;
 
-		if (randomNum == 1) {
+		if (randomNum == 2) {
 			play = true;
 		}
 
 		int win = 0;
 		boolean draw = false;
-
 		while (win == 0 && draw == false) {
+
 			if (play == true) {
-				//save field in history
-				history.add(field);
-				//checkRandomField(field, true);
 				field[getRightField(field)] = 1;
-				/*
-				 * boolean isInKnown = false; for (int i = 0; i <
-				 * knownFields.size(); i++) { if
-				 * (!isDifferent(knownFields.get(i), field)) { isInKnown = true;
-				 * } } if (isInKnown == false) { knownFields.add(field); }
-				 * isInKnown = false;
-				 */
 				play = !play;
 			} else {
-				checkRandomField(field, false);
+				field[checkRandomField(field)] = 2;
 				play = !play;
 			}
-			 printScreen(field);
+
+			int[] currentField = new int[SIZE * SIZE];
+			for (int i = 0; i < field.length; i++) {
+				currentField[i] = field[i];
+			}
+			history.add(currentField);
+			rounds++;
 			win = checkForWin(field);
 			if (win == 0) {
 				draw = checkForDraw(field);
 			}
 		}
-		boolean endwin = false;
-		if (win == 1 || draw == true) {
-			endwin = true;
+		int endwin = 0;
+		if (win == 1) {
+			endwin = 1;
+		} else if (draw == true) {
+			endwin = 0;
+		} else {
+			endwin = 2;
+			if (output == true) {
+				System.out.println("A GAME WAS LOST!");
+				for (int i = 0; i < history.size(); i++) {
+					printScreen(history.get(i));
+				}
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return endwin;
+
+	}
+
+	private static double test(boolean output) {
+		System.out.println("Playing 100000 games against Random Player");
+		int wongames = 0;
+		for (int i = 0; i < 100000; i++) {
+			int game = playGame(output);
+			if (game != 2) {
+				wongames++;
+			} else {
+				lost++;
+			}
+		}
+		System.out.println("End winrate is = " + (wongames / 100000.0) * 100);
+		playAgainstHuman();
+		return (wongames / 100000.0) * 100;
+	}
+
+	private static int getBestPossibility(int[] field, boolean output) {
+		int[] gotField = new int[SIZE * SIZE];
+		for (int i = 0; i < gotField.length; i++) {
+			gotField[i] = field[i];
+		}
+
+		// this is a little bit cheating but the machine learning alg wont choose this
+		// exact case correctly
+
+		
+		if (gotField[0] == 2 && gotField[4] == 1 && gotField[8] == 2 && gotField[1] == 0 && gotField[2] == 0
+				&& gotField[3] == 0 && gotField[5] == 0 && gotField[6] == 0 && gotField[7] == 0) {
+			return 1;
+		}
+		if (gotField[2] == 2 && gotField[4] == 1 && gotField[6] == 2 && gotField[1] == 0 && gotField[0] == 0
+				&& gotField[3] == 0 && gotField[5] == 0 && gotField[8] == 0 && gotField[7] == 0) {
+			return 1;
+		}
+
+		// check all the possibilities of the current choice in history
+		if (possibilities(gotField) != null) {
+			int[] possibilities = possibilities(gotField);
+			// save the current choice.
+			// [0] is weather the game was won or not
+			// [1] is how many rounds it took.
+
+			// save the win chances of the current try
+			double[] WinChancesForPossibilities = new double[possibilities.length];
+			double[] LooseChancesForPossibilities = new double[possibilities.length];
+
+			for (int j = 0; j < possibilities.length; j++) {
+
+				gotField[possibilities[j]] = 1;
+				if (checkForWin(gotField) == 1) {
+					gotField[possibilities[j]] = 0;
+					return possibilities[j];
+				}
+				gotField[possibilities[j]] = 0;
+				// play every possibility 100 times and see which one gets the best win
+				// percentage
+				double wongames = 0;
+				double lostgames = 0;
+				int won = 0;
+				gotField[possibilities[j]] = 1;
+				for (int k = 0; k < possibilityCheck; k++) {
+					// play it out and get win and rounds
+					won = rematch(gotField);
+					if (won != 2) {
+						wongames++;
+					} else if (won == 2) {
+						lostgames++;
+					}
+				}
+
+				LooseChancesForPossibilities[j] = (lostgames / possibilityCheck) * 100;
+				WinChancesForPossibilities[j] = (wongames / possibilityCheck) * 100;
+				WinChancesForPossibilities[j] -= LooseChancesForPossibilities[j];
+				if (output == true) {
+					System.out.println(
+							"CHOICE: " + possibilities[j] + " LOOSEPERCENT:" + LooseChancesForPossibilities[j]);
+					System.out.println("CHOICE: " + possibilities[j] + " WINPERCENT:" + WinChancesForPossibilities[j]
+							+ "\n---------");
+				}
+				gotField[possibilities[j]] = 0;
+			}
+
+			for (int i = 0; i < possibilities.length; i++) {
+				gotField[possibilities[i]] = 2;
+				if (checkForWin(gotField) == 2) {
+					gotField[possibilities[i]] = 0;
+					return possibilities[i];
+				}
+				gotField[possibilities[i]] = 0;
+			}
+
+			// round[calcNumber(gotField)] = remember;
+			double[] bestPossibility = { -1000.0, -1000.0 };
+			for (int k = 0; k < possibilities.length; k++) {
+				if (WinChancesForPossibilities[k] > bestPossibility[1]) {
+					bestPossibility[0] = possibilities[k];
+					bestPossibility[1] = WinChancesForPossibilities[k];
+				}
+			}
+			return (int) bestPossibility[0];
+		}
+		return -1;
+	}
+
+	private static int play(int[] field, boolean applyChanges) {
+
+		int[] playField = new int[field.length];
+		for(int i = 0; i < field.length; i++) {
+			playField[i] = field[i];
+		}
+		// System.out.println("STARTING NEW GAME WITH");
+		// printScreen(field);
+
+		// a list to store the fields of a match
+		ArrayList<int[]> history = new ArrayList<int[]>();
+
+		int rounds = 0;
+		boolean play = false;
+		int randomNum = (int) (Math.random() * 2) + 1;
+
+		if (randomNum == 2) {
+			play = true;
+		}
+
+		int win = 0;
+		boolean draw = false;
+		while (win == 0 && draw == false) {
+			if (play == true) {
+				// save field in history
+				int[] currentField = new int[SIZE * SIZE];
+				for (int i = 0; i < field.length; i++) {
+					currentField[i] = field[i];
+				}
+				history.add(currentField);
+				field[getRightField(field)] = 1;
+				play = !play;
+			} else {
+				field[checkRandomField(field)] = 2;
+				play = !play;
+			}
+
+			// printScreen(field);
+			rounds++;
+			win = checkForWin(field);
+			if (win == 0) {
+				draw = checkForDraw(field);
+			}
+		}
+		int endwin = 0;
+		if (win == 1) {
+			endwin = 1;
+		} else if (draw == true) {
+			endwin = 0;
+		} else {
+			if (applyChanges == true) {
+				// Iterate over whole history backwards
+				for (int i = 0; i < history.size(); i++) {
+					/*
+					 * for(int j = 0; j < 100; j++) { int g = getBestPossibility(history.get(i),
+					 * false); if(startPick != g) { System.out.println("I GOT PORBLEMS WITH");
+					 * printScreen(history.get(i));
+					 * System.out.println("FIRST I THOUGT IT WAS "+startPick+" THEN: "+g); } }
+					 */
+					round[calcNumber(history.get(i))] = getBestPossibility(history.get(i), false);
+					changes++;
+				}
+			}
+			endwin = 2;
 		}
 		return endwin;
 	}
-	
-	private static int getRightField(int[] field){
-		int fieldNr = calcField(field);
+
+	private static int rematch(int[] field) {
+		int[] playField = new int[SIZE * SIZE];
+		for (int i = 0; i < SIZE * SIZE; i++) {
+			playField[i] = field[i];
+		}
+
+		boolean play = true;
+
+		if (count(1, playField) < count(2, playField)) {
+			play = true;
+		} else if (count(1, playField) == count(2, playField)) {
+			if (2 == ((int) (Math.random() * 2) + 1)) {
+				play = false;
+			}
+		}
+		int win = 0;
+		boolean draw = false;
+
+		draw = checkForDraw(playField);
+		win = checkForWin(playField);
+		while (win == 0 && draw == false) {
+			if (play == true) {
+				playField[checkRandomField(playField)] = 1;
+				play = !play;
+			} else {
+				playField[checkRandomField(playField)] = 2;
+				play = !play;
+			}
+			win = checkForWin(playField);
+			if (win == 0) {
+				draw = checkForDraw(playField);
+			}
+		}
+		int endwin = 0;
+		if (win == 1) {
+			endwin = 1;
+		} else if (draw == true) {
+			endwin = 0;
+		} else {
+			endwin = 2;
+		}
+		return endwin;
+	}
+
+	private static int[] possibilities(int[] field) {
+		int freeFields = 0;
+		int[] Values = null;
+		for (int i = 0; i < SIZE * SIZE; i++) {
+			if (field[i] == 0) {
+				freeFields++;
+			}
+		}
+		if (freeFields != 0) {
+			Values = new int[freeFields];
+			int k = 0;
+			for (int i = 0; i < SIZE * SIZE; i++) {
+				if (field[i] == 0) {
+					Values[k] = i;
+					k++;
+				}
+			}
+		}
+		return Values;
+	}
+
+	private static void playAgainstHuman() {
+		Scanner sc = new Scanner(System.in);
+		String sureChoice = "";
+		do {
+			System.out.println("Sie sind X. Der PC ist O.\nMöchten Sie anfangen?");
+			System.out.println("J. Ja\nN. Nein");
+			sureChoice = sc.next();
+		} while (!(sureChoice.toLowerCase().equals("j")) && !(sureChoice.toLowerCase().equals("n")));
+		int[] field = new int[SIZE * SIZE];
+		for (int i = 0; i < SIZE * SIZE; i++) {
+			field[i] = 0;
+		}
+
+		boolean YourTurn = false;
+		if (sureChoice.toLowerCase().equals("j")) {
+			YourTurn = true;
+		}
+		boolean draw = false;
+		int win = 0;
+
+		do {
+			printScreen(field);
+			if (YourTurn) {
+				System.out.println("Du bist an der Reihe.");
+
+				boolean correctInput = false;
+				System.out.println("Bitte geben Sie ihr Feld ein. Nummer zuerst und dann Buchstabe (Bsp. 1A)");
+				int input = sc.nextInt();
+				int Number = input;
+				// put new value in field and check for win
+				if (YourTurn) {
+					field[Number] = 2;
+				}
+				YourTurn = !YourTurn;
+			} else {
+				field[getRightField(field)] = 1;
+				YourTurn = !YourTurn;
+			}
+			win = checkForWin(field);
+			draw = checkForDraw(field);
+		} while (win == 0 && draw == false);
+		printScreen(field);
+		if (win == 1) {
+			System.out.print("Spieler 1 mit X hat gewonnen.");
+		} else if (win == 2) {
+			System.out.print("Spieler 2 mit O hat gewonnen.");
+		} else {
+			System.out.println("DRAW!");
+		}
+	}
+
+	private static int[] calcField(int fieldNr) {
+		int[] field = new int[SIZE * SIZE];
+		for (int i = 0; i < SIZE * SIZE; i++) {
+			field[i] = 0;
+		}
+		int remaining = fieldNr;
+		int result = fieldNr;
+		int i = SIZE * SIZE - 1;
+		while (result != 0) {
+			result = remaining / 3;
+			int rest = remaining % 3;
+			field[i] = rest;
+			remaining = result;
+			i--;
+		}
+		return field;
+	}
+
+	private static double train() {
+		double winPercentage = 0.0;
+		double wongames = 0.0;
+		double drawgames = 0.0;
+		double lostgames = 0.0;
+		double games = 0.0;
+		for (int i = 0; i < trainAmount; i++) {
+			int[] field = new int[SIZE * SIZE];
+			for (int j = 0; j < SIZE * SIZE; j++) {
+				field[j] = 0;
+			}
+			int won = 0;
+			won = play(field, true);
+
+			if (won != 2) {
+				wongames++;
+			} else {
+				lostgames++;
+			}
+			games++;
+		}
+		winPercentage = (wongames / games) * 100;
+		trainingRounds++;
+		return winPercentage;
+	}
+
+	private static void init() {
+		changes = 0;
+		for (int i = 0; i < POSSIBILITIES; i++) {
+			int[] field = calcField(i);
+			int check = checkRandomField(field);
+			if (check != -1) {
+				round[i] = checkRandomField(field);
+			}
+		}
+	}
+
+	private static int calcNumber(int[] field) {
+		int finalInt = 0;
+		int[] threes = { 1, 3, 9, 27, 81, 243, 729, 2187, 6561 };
+		for (int i = 0, j = SIZE * SIZE - 1; i < SIZE * SIZE; i++, j--) {
+			finalInt += field[i] * threes[j];
+		}
+		return finalInt;
+	}
+
+	private static int count(int i, int[] field) {
+		int j = 0;
+		for (int k = 0; k < SIZE * SIZE; k++) {
+			if (field[k] == i) {
+				j++;
+			}
+		}
+		return j;
+	}
+
+	private static int getRightField(int[] field) {
+		int fieldNr = calcNumber(field);
 		return round[fieldNr];
 	}
 
@@ -145,31 +593,17 @@ public class MachineLearningTicTacToe {
 		return isNotTheSame;
 	}
 
-	private static void checkRandomField(int[] field, boolean ml) {
-		int freeFields = 0;
-		for (int i = 0; i < SIZE * SIZE; i++) {
-			if (field[i] == 0) {
-				freeFields++;
-			}
+	private static int checkRandomField(int[] field) {
+		int[] freeFields = possibilities(field);
+		if (freeFields != null) {
+			int randomNum = (int) ((Math.random() * freeFields.length));
+			return freeFields[randomNum];
 		}
-		int[] Values = new int[freeFields];
-		int k = 0;
-		for (int i = 0; i < SIZE * SIZE; i++) {
-			if (field[i] == 0) {
-				Values[k] = i;
-				k++;
-			}
-		}
-		int randomNum = ThreadLocalRandom.current().nextInt(0, freeFields + 1) / 2;
-		if (ml == true) {
-			field[Values[randomNum]] = 1;
-		} else {
-			field[Values[randomNum]] = 2;
-		}
-
+		return -1;
 	}
 
 	private static void printScreen(int[] field) {
+		System.out.println("-------------------");
 		for (int i = 0, j = 0; i < SIZE * SIZE; i++) {
 			j++;
 			System.out.print("[" + field[i] + "]");
@@ -196,8 +630,8 @@ public class MachineLearningTicTacToe {
 
 	private static int checkForWin(int[] InputField) {
 		/*
-		 * WIN CASES: - ALL OF A ROW - ALL OF A COLUMN - LEFT UPPER CORNER TO
-		 * RIGHT LOWER - TOP RIGHT CORNER TO LEFT LOWER
+		 * WIN CASES: - ALL OF A ROW - ALL OF A COLUMN - LEFT UPPER CORNER TO RIGHT
+		 * LOWER - TOP RIGHT CORNER TO LEFT LOWER
 		 */
 
 		// Inputfield to 2dimensional array
