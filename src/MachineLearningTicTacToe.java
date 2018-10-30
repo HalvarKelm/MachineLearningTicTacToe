@@ -21,29 +21,21 @@ public class MachineLearningTicTacToe {
 	static int[] round = new int[POSSIBILITIES];
 
 	// how often the ML alg should play against a random player
-	static int trainAmount = 10000;
 	static int possibilityCheck = 800;
-
-	// track the number of trys each games
-	static int trys = 0;
-
-	static int trainingRounds = 0;
-	static int lost = 0;
-	static int changes = 0;
-	static double bestWinRate = 0.0;
-
+	
 	public static void main(String[] args) {
-
-		// setup the choises to pick random
-		init();
-		train();
+		
 	}
 
-	public static void train() {
+	//train the algorithm
+	public void train() {
 
+		//get for every field the best choice
 		for(int i = 0; i < round.length; i++) {
 			round[i] = getBestPossibility(calcField(i), false);
 		}
+		
+		//handle some special cases
 		round[0] = 0;
 		round[6579] = 8;
 		round[8019] = 8;
@@ -51,8 +43,10 @@ public class MachineLearningTicTacToe {
 		round[1557] = 1;
 	}
 
-	private static int playGame(boolean output) {
+	//test the game
+	private int playGame(boolean output) {
 
+		//initialize field
 		int[] field = new int[SIZE * SIZE];
 		for (int i = 0; i < SIZE * SIZE; i++) {
 			field[i] = 0;
@@ -61,7 +55,6 @@ public class MachineLearningTicTacToe {
 		// a list to store the fields of a match
 		ArrayList<int[]> history = new ArrayList<int[]>();
 
-		int rounds = 0;
 		boolean play = false;
 		int randomNum = (int) (Math.random() * 2) + 1;
 
@@ -86,7 +79,6 @@ public class MachineLearningTicTacToe {
 				currentField[i] = field[i];
 			}
 			history.add(currentField);
-			rounds++;
 			win = checkForWin(field);
 			if (win == 0) {
 				draw = checkForDraw(field);
@@ -115,49 +107,45 @@ public class MachineLearningTicTacToe {
 
 	}
 
-	private static double test(boolean output) {
+	//play 100000 times against a random Player
+	private double test(boolean output) {
 		System.out.println("Playing 100000 games against Random Player");
 		int wongames = 0;
 		for (int i = 0; i < 100000; i++) {
 			int game = playGame(output);
 			if (game != 2) {
 				wongames++;
-			} else {
-				lost++;
 			}
 		}
 		System.out.println("End winrate is = " + (wongames / 100000.0) * 100);
 		return (wongames / 100000.0) * 100;
 	}
 
-	private static int getBestPossibility(int[] field, boolean output) {
+	//check the win percentage for all the possible places
+	private int getBestPossibility(int[] field, boolean output) {
 		int[] gotField = new int[SIZE * SIZE];
 		for (int i = 0; i < gotField.length; i++) {
 			gotField[i] = field[i];
 		}
 
-		// this is a little bit cheating but the machine learning alg wont choose this
-		// exact case correctly
-
 		// check all the possibilities of the current choice in history
 		if (possibilities(gotField) != null) {
 			int[] possibilities = possibilities(gotField);
-			// save the current choice.
-			// [0] is weather the game was won or not
-			// [1] is how many rounds it took.
-
-			// save the win chances of the current try
+			
+			// save the win chances
 			double[] WinChancesForPossibilities = new double[possibilities.length];
 			double[] LooseChancesForPossibilities = new double[possibilities.length];
 
 			for (int j = 0; j < possibilities.length; j++) {
 
+				//handle in case you won
 				gotField[possibilities[j]] = 1;
 				if (checkForWin(gotField) == 1) {
 					gotField[possibilities[j]] = 0;
 					return possibilities[j];
 				}
 				gotField[possibilities[j]] = 0;
+				
 				// play every possibility 100 times and see which one gets the best win
 				// percentage
 				double wongames = 0;
@@ -186,6 +174,7 @@ public class MachineLearningTicTacToe {
 				gotField[possibilities[j]] = 0;
 			}
 
+			//check if you need to block
 			for (int i = 0; i < possibilities.length; i++) {
 				gotField[possibilities[i]] = 2;
 				if (checkForWin(gotField) == 2) {
@@ -195,7 +184,7 @@ public class MachineLearningTicTacToe {
 				gotField[possibilities[i]] = 0;
 			}
 
-			// round[calcNumber(gotField)] = remember;
+			//get best possibility
 			double[] bestPossibility = { -1000.0, -1000.0 };
 			for (int k = 0; k < possibilities.length; k++) {
 				if (WinChancesForPossibilities[k] > bestPossibility[1]) {
@@ -208,7 +197,8 @@ public class MachineLearningTicTacToe {
 		return -1;
 	}
 
-	private static int rematch(int[] field) {
+	//play a game against a random player
+	private int rematch(int[] field) {
 		int[] playField = new int[SIZE * SIZE];
 		for (int i = 0; i < SIZE * SIZE; i++) {
 			playField[i] = field[i];
@@ -252,7 +242,8 @@ public class MachineLearningTicTacToe {
 		return endwin;
 	}
 
-	private static int[] possibilities(int[] field) {
+	//get free places in a field
+	private int[] possibilities(int[] field) {
 		int freeFields = 0;
 		int[] Values = null;
 		for (int i = 0; i < SIZE * SIZE; i++) {
@@ -273,7 +264,8 @@ public class MachineLearningTicTacToe {
 		return Values;
 	}
 
-	private static void playAgainstHuman() {
+	//let the ML alg play against a human
+	private void playAgainstHuman() {
 		Scanner sc = new Scanner(System.in);
 		String sureChoice = "";
 		do {
@@ -324,7 +316,8 @@ public class MachineLearningTicTacToe {
 		}
 	}
 
-	public static int[] calcField(int fieldNr) {
+	//calculate the Field form a Number
+	public int[] calcField(int fieldNr) {
 		int[] field = new int[SIZE * SIZE];
 		for (int i = 0; i < SIZE * SIZE; i++) {
 			field[i] = 0;
@@ -342,8 +335,8 @@ public class MachineLearningTicTacToe {
 		return field;
 	}
 	
-	public static void init() {
-		changes = 0;
+	//initialize the different possibilities with random numbers
+	public void init() {
 		for (int i = 0; i < POSSIBILITIES; i++) {
 			int[] field = calcField(i);
 			int check = checkRandomField(field);
@@ -352,8 +345,9 @@ public class MachineLearningTicTacToe {
 			}
 		}
 	}
-
-	public static int calcNumber(int[] field) {
+	
+	//calculate the Number form a Field
+	public int calcNumber(int[] field) {
 		int finalInt = 0;
 		int[] threes = { 1, 3, 9, 27, 81, 243, 729, 2187, 6561 };
 		for (int i = 0, j = SIZE * SIZE - 1; i < SIZE * SIZE; i++, j--) {
@@ -362,7 +356,8 @@ public class MachineLearningTicTacToe {
 		return finalInt;
 	}
 
-	private static int count(int i, int[] field) {
+	//return how many times a value is present in a field
+	private int count(int i, int[] field) {
 		int j = 0;
 		for (int k = 0; k < SIZE * SIZE; k++) {
 			if (field[k] == i) {
@@ -372,12 +367,14 @@ public class MachineLearningTicTacToe {
 		return j;
 	}
 
-	public static int getRightField(int[] field) {
+	//get the corresponding reaction to a field
+	public int getRightField(int[] field) {
 		int fieldNr = calcNumber(field);
 		return round[fieldNr];
 	}
 
-	private static int checkRandomField(int[] field) {
+	//get a random reaction to a field
+	private int checkRandomField(int[] field) {
 		int[] freeFields = possibilities(field);
 		if (freeFields != null) {
 			int randomNum = (int) ((Math.random() * freeFields.length));
@@ -386,7 +383,8 @@ public class MachineLearningTicTacToe {
 		return -1;
 	}
 
-	public static void printScreen(int[] field) {
+	//print field to screen
+	public void printScreen(int[] field) {
 		System.out.println("-------------------");
 		for (int i = 0, j = 0; i < SIZE * SIZE; i++) {
 			j++;
@@ -398,7 +396,8 @@ public class MachineLearningTicTacToe {
 		}
 	}
 
-	private static boolean checkForDraw(int[] inputField) {
+	//check weather the game was a draw
+	private boolean checkForDraw(int[] inputField) {
 		int freeFields = 0;
 		for (int i = 0; i < SIZE * SIZE; i++) {
 			if (inputField[i] == 0) {
@@ -412,7 +411,8 @@ public class MachineLearningTicTacToe {
 		}
 	}
 
-	private static int checkForWin(int[] InputField) {
+	//check weather the game is won or not
+	private int checkForWin(int[] InputField) {
 
 		// Inputfield to 2dimensional array
 		int[][] field = new int[SIZE][SIZE];
